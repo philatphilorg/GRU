@@ -14,8 +14,8 @@ sub init {
 sub _score_cue {
     my( $self, $cue ) = @_;
 
-    my $alpha = $self->get__cue()->{$cue} || 1;
-    my $beta  = $self->get__train_count() || 1;
+    my $alpha = $self->get__cue()->{$cue};
+    my $beta  = $self->get__train_count();
 
     return GRU::Math::beta_function( $alpha, $beta );
 

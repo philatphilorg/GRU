@@ -14,23 +14,35 @@ sub init {
 
 sub Guess {
     my( $self, $data, $acct ) = @_;
-
     my $gru = $self->get__animal_gru();
-    my $cues = $data->{cues};
+    my $cues = [ map { s/[^a-zA-Z0-9_-]+//gs; $_ } map { lc( $_ ) } values %$data];
 
-    return $gru->_guess( $cues );
+    my $ret = $gru->_guess( $cues );  #returns a list of node objects
+
+    print STDERR Data::Dumper->Dump(["GUESS : ".join(',',@$cues),[map { $_->get_name() } @$ret]]);
+
+    return $ret;
 } #sub Guess
 
 sub Train {
     my( $self, $data, $acct ) = @_;
 
-    my $gru   = $self->get__animal_gru();
-
-    my $cues  = $data->{cues};
+    my $cues  = [ map { s/[^a-zA-Z0-9_-]+//gs; $_ } map { lc( $_ ) } values %{$data->{cues}} ];
     my $name  = $data->{name};
-    my $node  = $gru->_train( $cues, $data->{guessed_node} );
+    my $guessed_node      = $data->{guessed_node};
+    my $was_correct_guess = $data->{was_correct_guess};
 
-    $node->set_name( $name ) if $name;
+    my $train_node = $was_correct_guess ? $guessed_node : new GRU::Node();
+    print STDERR Data::Dumper->Dump([$train_node,$was_correct_guess]);    
+    my $gru   = $self->get__animal_gru();
+    my $node  = $gru->_train( $cues, $train_node, $was_correct_guess );
+
+    print STDERR Data::Dumper->Dump(["TRAINING", $node, join( ',', @$cues ), $name]);
+
+    if( ( ! $was_correct_guess ) && $name ) {
+	die "Unable to reset name" if $node->get_name();
+	$node->set_name( $name );
+    }
 
     return 1;    
 } #sub Train

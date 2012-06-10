@@ -16,7 +16,7 @@ sub _winnow_cues {
     my( $self, $cues ) = @_;
 
     my $cue_stats = $self->get__cue_stats();
-    return [ grep { GRU::Math::check_beta_function( $cue_stats->{$_}{hits}, $cue_stats->{$_}{tries} ) } @$cues ];
+    return [ grep { GRU::Math::check_beta_function( $cue_stats->{$_}{hits}, $cue_stats->{$_}{tries} ) < rand() } @$cues ];
 }
 
 sub _guess {
@@ -26,10 +26,16 @@ sub _guess {
     # pick node candidates
     my( %node_id, %scores );
 
+    my $cue_stats = $self->get__cue_stats();
+    print STDERR Data::Dumper->Dump(["To winnow : ".join(',',map { "($_,$cue_stats->{$_}{hits},$cue_stats->{$_}{tries})" } @$cues)]);
+
     $cues = $self->_winnow_cues( $cues );
-    
+
+    print STDERR Data::Dumper->Dump(["Winnowed to ", join( ',', @$cues ) ]);
+
     for my $cue (@$cues) {
-	my @nodes = keys %{$cue2node->{$cue}||{}};
+	my @nodes = values %{$cue2node->{$cue}||{}};
+	print STDERR Data::Dumper->Dump(["$cue => ".join(',',map { $_->get_name() } @nodes)]);
 	for my $n (@nodes) {
 	    $node_id{$n->{ID}} = $n;
 	}
@@ -49,16 +55,25 @@ sub _guess {
 } #_guess
 
 sub _train {
-    my( $self, $cues, $correctly_guessed_node ) = @_;
-    
+    my( $self, $cues, $guessed_node, $was_guessed_correctly ) = @_;
+
+    my $train_node = $guessed_node || new GRU::Node();
+
+    my $cue2node  = $self->get__cue2node();
     my $cue_stats = $self->get__cue_stats();
     for my $cue (@$cues) {
 	$cue_stats->{$cue}{tries}++;
-	$cue_stats->{$cue}{hits}++ if $correctly_guessed_node;
+	if( $was_guessed_correctly ) { 
+	    $cue_stats->{$cue}{hits}++;
+	}
+	$cue2node->{$cue}{ $train_node->{ID} } = $train_node;
     }
     
-    my $train_node = $correctly_guessed_node || new GRU::Node();
     $train_node->train( $cues );
+
+    print STDERR Data::Dumper->Dump(["Trained " . $train_node->get_name() . " with : " . join( ',', @$cues )]);
+
+    return $train_node;
 
 } #_train
 
