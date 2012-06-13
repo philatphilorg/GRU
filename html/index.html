@@ -1,0 +1,89 @@
+<html>
+  <head>
+    <title>Animal Learning Game</title>
+    <script src="/yote/js/jquery-latest.js"></script>
+    <script src="/yote/js/jquery.dumper.js"></script>
+    <script src="/yote/js/jquery.cookie.js"></script>
+    <script src="/yote/js/jquery.base64.min.js"></script>
+    <script src="/yote/js/json2.js"></script>
+    <script src="/yote/js/yote.js"></script>
+    <script src="/yote/js/yote.util.js"></script>
+    <script>
+    $().ready(function(){
+	var alg = $.yote.fetch_app( 'GRU::AnimalLearningGame' );
+
+	function teach() {
+	    console.log( $( '#guess' ).val().split( /\s+/ ) );
+	    alg.Train( {
+		cues   : $( '#guess' ).val().split( /\s+/ ),
+		name   : $( '#name' ).val(),
+	    } );
+	    $( '#answer' ).empty().append( 'Taught the Animal Learning Game' );
+
+	} //teach
+
+	function guess() {
+	    var cues = $( '#guess' ).val().split( /\s+/ );
+	    var res = alg.Guess( cues );
+	    res = res.to_hash();
+	    if( res.nodes.length() > 0 ) {
+		( function( gcues, wcues, node ) {
+		    $( '#answer' ).empty().append( "Is it a <b>" + res.nodes.get(0).get_name() + "</b>?<BR>" + 
+						   "<button type=button id=yes_b>Yes</button> <BR><button type=button id=no_b>No</button> it was a <input type=text id=correct_ans>" );
+		    $( '#yes_b' ).click( function() {
+			alg.Train( {
+			    cues              : gcues,
+			    guessed_node      : node,
+			    was_correct_guess : 1,
+			} );
+			$( '#answer' ).empty().append( "Learned "  + name );
+			$( '#guess' ).val( '' );
+		    } );
+		    $.yote.util.button_actions( { button : '#no_b',
+						  texts  : [ '#correct_ans' ],
+						  action : function() {
+						      var name = $( '#correct_ans' ).val();
+						      alg.Train( {
+							  cues              : gcues,
+							  winnowed_cues     : wcues,
+							  guessed_node      : node,
+							  name              : name,
+						      } );
+						      $( '#answer' ).empty().append( "Learned "  + name );
+						      $( '#guess' ).val( '' );
+						  },
+						} );
+		} )( cues, res.winnowed_cues, res.nodes.get(0) );
+	    } else {
+		$( '#answer' ).empty().append( "Did not come up with an answer. What is it ? <input type=text id=name> <button type=button id=teach_b>teach</button>" );
+		$.yote.util.button_actions( { button  : '#teach_b',
+					      action  : teach,
+					      texts   : [ '#name' ],
+					    } );
+	    }
+	} //guess
+	
+	$.yote.util.button_actions( { button : '#guess_b',
+				      action : guess,
+				      texts  : [ '#guess' ],
+				      cleanup_exempt : { '#guess' : true },
+				    } );
+    });
+    </script>
+    <style>
+      .emp { font-family:"Lucida Console",monospace;  }
+    </style>
+  </head>
+  <body>
+    <H1>The Animal Learning Game</H1>
+
+    <div id=guess_div>
+      Describe an animal <input type=text size=100 id=guess> <br> 
+      <button type=button id=guess_b>Guess</button>
+    </div>
+
+    <div id=answer></div>
+
+    <div id=stats></div>
+  </body>
+</html>
