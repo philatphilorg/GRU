@@ -26,7 +26,6 @@ sub _guess {
     my( %node_id, %scores );
 
     my $cue_stats = $self->get__cue_stats();
-
     print STDERR Data::Dumper->Dump(["To winnow : ".join(',',map { "($_,$cue_stats->{$_}{hits},$cue_stats->{$_}{tries})" } @$cues)]);
 
     my $winnowed = $self->_winnow_cues( $cues );
@@ -60,7 +59,7 @@ sub _guess {
 sub _train {
     my( $self, $cues, $winnowed_cues, $guessed_node, $was_guessed_correctly ) = @_;
 
-    my $train_node = $guessed_node || new GRU::Node();
+    my $train_node = $was_guessed_correctly ?  $guessed_node : new GRU::Node();
 
     my $cue2node  = $self->get__cue2node();
     my $cue_stats = $self->get__cue_stats();
@@ -87,7 +86,6 @@ sub _train {
 	}
 	print STDERR Data::Dumper->Dump(["Trained node " . $train_node->get_name() . " with : " .join (',', @$cues )]);
     }
-    
     $train_node->train( $cues );
 
     return $train_node;

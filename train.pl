@@ -15,6 +15,7 @@ Yote::ObjProvider::init(
     );
 
 my $root = Yote::YoteRoot::fetch_root();
+$root->_purge_app( 'GRU::AnimalLearningGame' );
 my $app   = $root->fetch_app_by_class( 'GRU::AnimalLearningGame' );
 my $gru   = $app->get__animal_gru();
 
@@ -50,8 +51,18 @@ for my $set (split( /[\n\r]+/, $sets ) ) {
     $animal =~ s/[^a-z]//g;
     my @cues = grep { /\S/ } split( /\s+/, $cues );
     print STDERR Data::Dumper->Dump([$animal,\@cues]);
-    my $node  = $gru->_train( \@cues );
+    my $res = $gru->_guess( \@cues );
+    my $winnowed = $res->{winnowed_cues};
+    my $guesses = $res->{nodes};
+    my $guess_node;
+    my $was_guessed_correctly;
+    if( @$guesses ) {
+	$guess_node = $guesses->[0];
+	$was_guessed_correctly = $guesses->[0]->get_name() eq $animal;
+    }
+    
+    my $node  = $gru->_train( \@cues, \@cues, $guess_node, $was_guessed_correctly );
     $node->set_name( $animal );
 }
-
+print STDERR Data::Dumper->Dump([$gru->get__cue2node()]);
 Yote::ObjProvider::stow_all();
