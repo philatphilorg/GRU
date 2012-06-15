@@ -30,15 +30,19 @@ fish : swims in the ocean and breathes water and has scales
 dolphin : playful mammal that lives in the ocean
 shark : preditor fish of the ocean with rows of teeth
 mosquito : a bug that sucks your blood
-bat : a flying mammal
+bat : a flying mammal with sonar
 squirrel : eats nuts and lives in trees with a big bushy tail
 beaver : flat tail and buck teeth and builds dams and knaws trees
 capybara : biggest rodent
 mouse : small cheese eating rodent that squeaks
-whale : huge big ocean mammal with a blowhole
+whale : huge big ocean mammal with a blowhole lives in pods
 cheetah : fastest land animal big feline cat
 lion : king of the jungle with a mane and hunts in prides and roars
 horse : has a mane and a tufted tail and gallops and races and whickers and whinnies
+cow : moos and gives milk and has black and white spots
+sheep : has wool and goes baah and bleats
+orca : called a killer whale this animal is black and white 
+kangaroo : australian marsupial that hops around and has a pouch the young are called joeys
 zebra : black and white striped horse from africa
 tiger : orange and black striped large cat
 walrus : big sea mammal with tusks
