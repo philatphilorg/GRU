@@ -27,7 +27,7 @@
 	    var res = alg.Guess( cues );
 	    res = res.to_hash();
 	    if( res.nodes.length() > 0 ) {
-		( function( gcues, wcues, node ) {
+		( function( gcues, node ) {
 		    $( '#answer' ).empty().append( "Is it a <b>" + res.nodes.get(0).get_name() + "</b>?<BR>" + 
 						   "<button type=button id=yes_b>Yes</button> <BR><button type=button id=no_b>No</button> it was a <input type=text id=correct_ans>" );
 		    $( '#yes_b' ).click( function() {
@@ -45,7 +45,6 @@
 						      var name = $( '#correct_ans' ).val();
 						      alg.Train( {
 							  cues              : gcues,
-							  winnowed_cues     : wcues,
 							  guessed_node      : node,
 							  name              : name,
 						      } );
@@ -53,7 +52,7 @@
 						      $( '#guess' ).val( '' );
 						  },
 						} );
-		} )( cues, res.winnowed_cues, res.nodes.get(0) );
+		} )( cues, res.nodes.get(0) );
 	    } else {
 		$( '#answer' ).empty().append( "Did not come up with an answer. What is it ? <input type=text id=name> <button type=button id=teach_b>teach</button>" );
 		$.yote.util.button_actions( { button  : '#teach_b',
