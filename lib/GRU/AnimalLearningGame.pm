@@ -18,8 +18,11 @@ sub Guess {
     my $cues = [ map { s/[^a-zA-Z0-9_-]+//gs; $_ } map { lc( $_ ) } values %$data];
 
     my $ret = $gru->_guess( $cues );  #returns a list of node objects
-
     my $nodes = $ret->{nodes};
+    if( $nodes && @$nodes > 5 ) {
+	$nodes =  [@$nodes[0..4]];
+	$ret->{nodes} = $nodes;
+    }
     print STDERR Data::Dumper->Dump(["GUESS : ".join(',',@$cues),[map { $_->get_name() } @$nodes]]);
     return $ret;
 } #sub Guess
