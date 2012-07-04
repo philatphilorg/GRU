@@ -4,89 +4,62 @@ use strict;
 
 use base 'Yote::Obj';
 
+use GRU::Cue;
 use GRU::Math;
 
 sub init {
     my $self = shift;
-    $self->set__cue2node( {} );
-    $self->set__cue_stats( {} );
+    $self->set__label2cue( {} );
 }
 
-sub _winnow_cues {
-    my( $self, $cues ) = @_;
-
-    my $cue_stats = $self->get__cue_stats();
-    return [ grep { GRU::Math::check_beta_function( $cue_stats->{$_}{hits}, $cue_stats->{$_}{tries} ) < rand() } @$cues ];
-}
+sub _cues {
+    my( $self, $labels ) = @_;
+    my $label2cue = $self->get__label2cue();
+    my @res;
+    for my $label (@$labels) {
+	my $cue = $label2cue->{ $label };
+	unless( $cue ) {
+	    $cue = new GRU::Cue();
+	    $cue->set_label( $label );
+	    $label2cue->{ $label } = $cue;
+	}
+	push( @res, $cue );
+    }
+    return \@res;
+} #_cues
 
 sub _guess {
-    my( $self, $cues ) = @_;
-    my $cue2node = $self->get__cue2node();
-    # pick node candidates
-    my( %node_id, %scores );
+    my( $self, $cue_labels ) = @_;
 
-    my $cue_stats = $self->get__cue_stats();
-    print STDERR Data::Dumper->Dump(["To winnow : ".join(',',map { "($_,$cue_stats->{$_}{hits},$cue_stats->{$_}{tries})" } @$cues)]);
+    my $cues = $self->_cues( $cue_labels );
 
-    my $winnowed = $self->_winnow_cues( $cues );
-
-    print STDERR Data::Dumper->Dump(["Winnowed to " . join( ',', @$winnowed ) ]);
-
-    my $use_cues = @$winnowed > 0 ? $winnowed : $cues;
-
-    for my $cue (@$use_cues) {
-	my @nodes = values %{$cue2node->{$cue}||{}};
-	print STDERR Data::Dumper->Dump(["$cue => ".join(',',map { $_->get_name() } @nodes)]);
-	for my $n (@nodes) {
-	    $node_id{$n->{ID}} = $n;
-	}
-    } #each cue candidate
-
-    for my $n (values %node_id) {
-	my $score = $n->_score( $cues );
-	if( $score > 0 ) {
-	    $scores{ $n->{ID} } = $score;
-	}
-    } #each node
+    my( %scores );
     
+    for my $cue (@$cues) {
+	my $nodes = $cue->_score_nodes();
+	for my $node_id (keys %$nodes) {
+	    $scores{ $node_id } += $nodes->{$node_id};
+	}
+    } #each cue
+
+    return [ map { Yote::ObjProvider::fetch( $_ ) } sort { $scores{$b} <=> $scores{$a} } keys %scores ];
     #
     # TODO: have this return rather than a list of nodes, return a list of groups of related nodes
     #
-    return { nodes => [ map { Yote::ObjProvider::fetch( $_ ) } sort { $scores{$b} <=> $scores{$a} } keys %scores ],
-	     winnowed_cues => $cues };
 } #_guess
 
 sub _train {
-    my( $self, $cues, $winnowed_cues, $guessed_node, $was_guessed_correctly ) = @_;
+    my( $self, $cue_labels, $guessed_node, $was_guessed_correctly ) = @_;
 
     my $train_node = $was_guessed_correctly ?  $guessed_node : new GRU::Node();
 
-    my $cue2node  = $self->get__cue2node();
-    my $cue_stats = $self->get__cue_stats();
+    my $cues = $self->_cues( $cue_labels );
 
-    if( $was_guessed_correctly ) { 
-	for my $cue (@$cues) {
-	    $cue_stats->{$cue}{tries}++;
-	    $cue_stats->{$cue}{hits}++;
-	    $cue2node->{$cue}{ $train_node->{ID} } = $train_node;
-	}
-	print STDERR Data::Dumper->Dump(["Trained node " . $train_node->get_name() . " with : " .join (',', @$cues )]);
+    for my $cue (@$cues) {
+	$cue->_train( $train_node, $was_guessed_correctly );
     }
-    elsif( $winnowed_cues && @$winnowed_cues ) {
-	for my $cue (@$winnowed_cues) {
-	    $cue_stats->{$cue}{tries}++;
-	    $cue2node->{$cue}{ $train_node->{ID} } = $train_node;
-	}
-	print STDERR Data::Dumper->Dump(["Trained node " . $train_node->get_name() . " with : " .join (',', @$winnowed_cues )]);
-    }
-    else {
-	for my $cue (@$cues) {
-	    $cue_stats->{$cue}{tries}++;
-	    $cue2node->{$cue}{ $train_node->{ID} } = $train_node;
-	}
-	print STDERR Data::Dumper->Dump(["Trained node " . $train_node->get_name() . " with : " .join (',', @$cues )]);
-    }
-    $train_node->train( $cues );
+    
+    $train_node->_train( $cues, $was_guessed_correctly );
 
     return $train_node;
 
