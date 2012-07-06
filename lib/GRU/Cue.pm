@@ -33,15 +33,20 @@ sub _train {
 sub _score_nodes {
     my $self = shift;
     
+    my $cue_val = GRU::Math::beta_function(
+	$self->get__hits(),
+	$self->get__tries()
+	);
+    return {} unless $cue_val;
     my %node_id2score;
     my $node2stats = $self->get__node_stats();
     for my $node_id (keys %$node2stats) {
-	$node_id2score{$node_id} = GRU::Math::beta_function( 
+	$node_id2score{$node_id} = $cue_val * GRU::Math::beta_function( 
 	    $node2stats->{$node_id}{ hits },
 	    $node2stats->{$node_id}{ tries },
 	    );
     }
-    
+    print STDERR Data::Dumper->Dump([$self->get_label()." score $cue_val", [ map { Yote::ObjProvider::fetch( $_ )->get_name() . " : $node_id2score{$_}" } keys %node_id2score ]]);
     return \%node_id2score;
 } #_score
 
